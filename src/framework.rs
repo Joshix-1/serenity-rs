@@ -17,8 +17,10 @@ use crate::gateway::client::{Client, Context, FullEvent};
 #[async_trait]
 pub trait Framework: Send + Sync {
     /// Called directly after the `Client` is created.
-    async fn init(&mut self, client: &Client) {
-        let _: &Client = client;
+    async fn init<EH>(&mut self, client: &Client<EH>)
+        where EH: crate::all::EventHandler + ?Sized + 'static
+    {
+        let _: &Client<EH> = client;
     }
     /// Called on every incoming event.
     async fn dispatch(&self, ctx: &Context, event: &FullEvent);
@@ -29,7 +31,9 @@ impl<F> Framework for Box<F>
 where
     F: Framework + ?Sized,
 {
-    async fn init(&mut self, client: &Client) {
+    async fn init<EH>(&mut self, client: &Client<EH>)
+        where EH: crate::all::EventHandler + ?Sized + 'static
+    {
         (**self).init(client).await;
     }
     async fn dispatch(&self, ctx: &Context, event: &FullEvent) {
@@ -42,7 +46,9 @@ impl<F> Framework for &mut F
 where
     F: Framework + ?Sized,
 {
-    async fn init(&mut self, client: &Client) {
+    async fn init<EH>(&mut self, client: &Client<EH>)
+        where EH: crate::all::EventHandler + ?Sized + 'static
+    {
         (**self).init(client).await;
     }
     async fn dispatch(&self, ctx: &Context, event: &FullEvent) {

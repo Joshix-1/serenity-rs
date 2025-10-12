@@ -40,7 +40,10 @@ pub const DEFAULT_WAIT_BETWEEN_SHARD_START: Duration = Duration::from_secs(5);
 
 /// A manager for handling the status of shards by starting them, restarting them, and stopping
 /// them when required.
-pub struct ShardManager {
+pub struct ShardManager<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     token: Token,
     /// A sender that is cloned and given out to each ShardRunner as it is created
     manager_tx: Sender<ShardManagerMessage>,
@@ -51,7 +54,7 @@ pub struct ShardManager {
     /// [`Client::data`]: crate::Client::data
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     /// A reference to an [`EventHandler`].
-    pub event_handler: Option<Arc<dyn EventHandler>>,
+    pub event_handler: Option<Arc<EH>>,
     /// A reference to a [`RawEventHandler`].
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     /// A copy of the framework.
@@ -86,9 +89,12 @@ pub struct ShardManager {
     pub presence: Option<PresenceData>,
 }
 
-impl ShardManager {
+impl<EH> ShardManager<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     #[must_use]
-    pub fn new(opt: ShardManagerOptions) -> Self {
+    pub fn new(opt: ShardManagerOptions<EH>) -> Self {
         let (manager_tx, manager_rx) = mpsc::unbounded();
 
         Self {
@@ -122,7 +128,7 @@ impl ShardManager {
     ///
     /// This function will return `true` if the ShardManager has successfully been
     /// notified to shut down, or false if it has already shut down and been dropped.
-    pub fn get_shutdown_trigger(&self) -> impl FnOnce() -> bool + Send + use<> {
+    pub fn get_shutdown_trigger(&self) -> impl FnOnce() -> bool + Send + use<EH> {
         let manager_tx = self.manager_tx.clone();
         move || manager_tx.unbounded_send(ShardManagerMessage::Quit(Ok(()))).is_ok()
     }
@@ -274,7 +280,10 @@ impl ShardManager {
     }
 }
 
-impl Drop for ShardManager {
+impl<EH> Drop for ShardManager<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     /// A custom drop implementation to clean up after the manager.
     ///
     /// This shuts down all active [`ShardRunner`]s.
@@ -293,10 +302,13 @@ impl Drop for ShardManager {
     }
 }
 
-pub struct ShardManagerOptions {
+pub struct ShardManagerOptions<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     pub token: Token,
     pub data: Arc<dyn std::any::Any + Send + Sync>,
-    pub event_handler: Option<Arc<dyn EventHandler>>,
+    pub event_handler: Option<Arc<EH>>,
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     pub framework: Arc<OnceLock<Arc<dyn Framework>>>,

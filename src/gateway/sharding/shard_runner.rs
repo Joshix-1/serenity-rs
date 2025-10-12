@@ -33,9 +33,12 @@ use crate::model::id::{GuildId, ShardId};
 use crate::model::user::OnlineStatus;
 
 /// A runner for managing a [`Shard`] and its respective WebSocket client.
-pub struct ShardRunner {
+pub struct ShardRunner<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     data: Arc<dyn std::any::Any + Send + Sync>,
-    event_handler: Option<Arc<dyn EventHandler>>,
+    event_handler: Option<Arc<EH>>,
     raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     framework: Option<Arc<dyn Framework>>,
@@ -56,9 +59,12 @@ pub struct ShardRunner {
     pub(crate) collectors: Arc<parking_lot::RwLock<Vec<CollectorCallback>>>,
 }
 
-impl ShardRunner {
+impl<EH> ShardRunner<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     /// Creates a new runner for a Shard.
-    pub fn new(opt: ShardRunnerOptions) -> Self {
+    pub fn new(opt: ShardRunnerOptions<EH>) -> Self {
         let (tx, rx) = mpsc::unbounded();
 
         Self {
@@ -472,9 +478,12 @@ impl ShardRunner {
 }
 
 /// Options to be passed to [`ShardRunner::new`].
-pub struct ShardRunnerOptions {
+pub struct ShardRunnerOptions<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     pub data: Arc<dyn std::any::Any + Send + Sync>,
-    pub event_handler: Option<Arc<dyn EventHandler>>,
+    pub event_handler: Option<Arc<EH>>,
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     pub framework: Option<Arc<dyn Framework>>,

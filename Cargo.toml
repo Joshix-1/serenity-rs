@@ -81,7 +81,6 @@ default_native_tls = ["default_no_backend", "native_tls_backend"]
 default_no_backend = [
     "cache",
     "chrono",
-    "framework",
     "transport_compression_zlib",
     "transport_compression_zstd",
 ]
@@ -154,4 +153,3 @@ native_tls_backend = [
 [package.metadata.docs.rs]
 features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
-

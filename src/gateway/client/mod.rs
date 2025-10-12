@@ -67,7 +67,10 @@ use crate::model::user::OnlineStatus;
 
 /// A builder implementing [`IntoFuture`] building a [`Client`] to interact with Discord.
 #[must_use = "Builders do nothing unless they are awaited"]
-pub struct ClientBuilder {
+pub struct ClientBuilder<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     token: Token,
     data: Option<Arc<dyn std::any::Any + Send + Sync>>,
     http: Arc<Http>,
@@ -78,14 +81,17 @@ pub struct ClientBuilder {
     framework: Option<Box<dyn Framework>>,
     #[cfg(feature = "voice")]
     voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
-    event_handler: Option<Arc<dyn EventHandler>>,
+    event_handler: Option<Arc<EH>>,
     raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     presence: PresenceData,
     wait_time_between_shard_start: Duration,
     compression: TransportCompression,
 }
 
-impl ClientBuilder {
+impl<EH> ClientBuilder<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
     /// Construct a new builder to call methods on for the client construction. The `token` will
     /// automatically be prefixed "Bot " if not already.
     ///
@@ -232,14 +238,14 @@ impl ClientBuilder {
     }
 
     /// Sets the event handler where all received gateway events will be dispatched.
-    pub fn event_handler(mut self, event_handler: Arc<dyn EventHandler>) -> Self {
+    pub fn event_handler(mut self, event_handler: Arc<EH>) -> Self {
         self.event_handler = Some(event_handler);
         self
     }
 
     /// Gets the added event handler. See [`Self::event_handler`] for more info.
     #[must_use]
-    pub fn get_event_handler(&self) -> Option<Arc<dyn EventHandler>> {
+    pub fn get_event_handler(&self) -> Option<Arc<EH>> {
         self.event_handler.clone()
     }
 
@@ -276,10 +282,13 @@ impl ClientBuilder {
     }
 }
 
-impl IntoFuture for ClientBuilder {
-    type Output = Result<Client>;
+impl<EH> IntoFuture for ClientBuilder<EH>
+where
+    EH: EventHandler + ?Sized + 'static,
+{
+    type Output = Result<Client<EH>>;
 
-    type IntoFuture = BoxFuture<'static, Result<Client>>;
+    type IntoFuture = BoxFuture<'static, Result<Client<EH>>>;
 
     fn into_future(self) -> Self::IntoFuture {
         let data = self.data.unwrap_or(Arc::new(()));
@@ -379,12 +388,13 @@ impl IntoFuture for ClientBuilder {
 ///
 /// [`Shard`]: crate::gateway::Shard
 /// [`Event::MessageCreate`]: crate::model::event::Event::MessageCreate
-pub struct Client {
+pub struct Client<EH>
+    where EH: EventHandler + ?Sized + 'static {
     data: Arc<dyn std::any::Any + Send + Sync>,
     /// The shard manager for the client.
     ///
     /// This is the brains, managing shards (websocket connections) and bot lifecycle.
-    pub shard_manager: ShardManager,
+    pub shard_manager: ShardManager<EH>,
     /// The voice manager for the client.
     ///
     /// This is an ergonomic structure for interfacing over shards' voice
@@ -400,8 +410,10 @@ pub struct Client {
     pub http: Arc<Http>,
 }
 
-impl Client {
-    pub fn builder(token: Token, intents: GatewayIntents) -> ClientBuilder {
+impl<EH> Client<EH>
+    where EH: EventHandler + ?Sized + 'static
+{
+    pub fn builder(token: Token, intents: GatewayIntents) -> ClientBuilder<EH> {
         ClientBuilder::new(token, intents)
     }
 
