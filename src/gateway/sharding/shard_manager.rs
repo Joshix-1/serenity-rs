@@ -42,7 +42,7 @@ pub const DEFAULT_WAIT_BETWEEN_SHARD_START: Duration = Duration::from_secs(5);
 /// them when required.
 pub struct ShardManager<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     token: Token,
     /// A sender that is cloned and given out to each ShardRunner as it is created
@@ -54,7 +54,7 @@ where
     /// [`Client::data`]: crate::Client::data
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     /// A reference to an [`EventHandler`].
-    pub event_handler: Option<Arc<EH>>,
+    pub event_handler: Option<EH>,
     /// A reference to a [`RawEventHandler`].
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     /// A copy of the framework.
@@ -91,7 +91,7 @@ where
 
 impl<EH> ShardManager<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     #[must_use]
     pub fn new(opt: ShardManagerOptions<EH>) -> Self {
@@ -282,7 +282,7 @@ where
 
 impl<EH> Drop for ShardManager<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     /// A custom drop implementation to clean up after the manager.
     ///
@@ -304,11 +304,11 @@ where
 
 pub struct ShardManagerOptions<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     pub token: Token,
     pub data: Arc<dyn std::any::Any + Send + Sync>,
-    pub event_handler: Option<Arc<EH>>,
+    pub event_handler: Option<EH>,
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     pub framework: Arc<OnceLock<Arc<dyn Framework>>>,

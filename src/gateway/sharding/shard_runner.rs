@@ -35,10 +35,10 @@ use crate::model::user::OnlineStatus;
 /// A runner for managing a [`Shard`] and its respective WebSocket client.
 pub struct ShardRunner<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     data: Arc<dyn std::any::Any + Send + Sync>,
-    event_handler: Option<Arc<EH>>,
+    event_handler: Option<EH>,
     raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     framework: Option<Arc<dyn Framework>>,
@@ -61,7 +61,7 @@ where
 
 impl<EH> ShardRunner<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     /// Creates a new runner for a Shard.
     pub fn new(opt: ShardRunnerOptions<EH>) -> Self {
@@ -151,7 +151,7 @@ where
                 self.update_runner_info();
 
                 if let Some(event_handler) = &self.event_handler {
-                    let event_handler = Arc::clone(event_handler);
+                    let event_handler = event_handler.clone();
                     let context = self.make_context();
                     let event = ShardStageUpdateEvent {
                         new: post,
@@ -480,10 +480,10 @@ where
 /// Options to be passed to [`ShardRunner::new`].
 pub struct ShardRunnerOptions<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     pub data: Arc<dyn std::any::Any + Send + Sync>,
-    pub event_handler: Option<Arc<EH>>,
+    pub event_handler: Option<EH>,
     pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     #[cfg(feature = "framework")]
     pub framework: Option<Arc<dyn Framework>>,

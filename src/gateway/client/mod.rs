@@ -69,7 +69,7 @@ use crate::model::user::OnlineStatus;
 #[must_use = "Builders do nothing unless they are awaited"]
 pub struct ClientBuilder<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     token: Token,
     data: Option<Arc<dyn std::any::Any + Send + Sync>>,
@@ -81,7 +81,7 @@ where
     framework: Option<Box<dyn Framework>>,
     #[cfg(feature = "voice")]
     voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
-    event_handler: Option<Arc<EH>>,
+    event_handler: Option<EH>,
     raw_event_handler: Option<Arc<dyn RawEventHandler>>,
     presence: PresenceData,
     wait_time_between_shard_start: Duration,
@@ -90,7 +90,7 @@ where
 
 impl<EH> ClientBuilder<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     /// Construct a new builder to call methods on for the client construction. The `token` will
     /// automatically be prefixed "Bot " if not already.
@@ -238,14 +238,14 @@ where
     }
 
     /// Sets the event handler where all received gateway events will be dispatched.
-    pub fn event_handler(mut self, event_handler: Arc<EH>) -> Self {
+    pub fn event_handler(mut self, event_handler: EH) -> Self {
         self.event_handler = Some(event_handler);
         self
     }
 
     /// Gets the added event handler. See [`Self::event_handler`] for more info.
     #[must_use]
-    pub fn get_event_handler(&self) -> Option<Arc<EH>> {
+    pub fn get_event_handler(&self) -> Option<EH> {
         self.event_handler.clone()
     }
 
@@ -284,7 +284,7 @@ where
 
 impl<EH> IntoFuture for ClientBuilder<EH>
 where
-    EH: EventHandler + ?Sized + 'static,
+    EH: EventHandler + Clone + 'static,
 {
     type Output = Result<Client<EH>>;
 
@@ -301,9 +301,9 @@ where
         if let Some(ratelimiter) = &http.ratelimiter
             && let Some(event_handler) = &self.event_handler
         {
-            let event_handler = Arc::clone(event_handler);
+            let event_handler = event_handler.clone();
             ratelimiter.set_ratelimit_callback(Box::new(move |info| {
-                let event_handler = Arc::clone(&event_handler);
+                let event_handler = event_handler.clone();
                 spawn_named("ratelimit::dispatch", async move {
                     event_handler.ratelimit(info).await;
                 });
@@ -389,7 +389,9 @@ where
 /// [`Shard`]: crate::gateway::Shard
 /// [`Event::MessageCreate`]: crate::model::event::Event::MessageCreate
 pub struct Client<EH>
-    where EH: EventHandler + ?Sized + 'static {
+where
+    EH: EventHandler + Clone + 'static,
+{
     data: Arc<dyn std::any::Any + Send + Sync>,
     /// The shard manager for the client.
     ///
@@ -411,7 +413,8 @@ pub struct Client<EH>
 }
 
 impl<EH> Client<EH>
-    where EH: EventHandler + ?Sized + 'static
+where
+    EH: EventHandler + Clone + 'static,
 {
     pub fn builder(token: Token, intents: GatewayIntents) -> ClientBuilder<EH> {
         ClientBuilder::new(token, intents)

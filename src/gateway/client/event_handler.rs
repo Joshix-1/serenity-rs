@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 #[cfg(feature = "cache")]
 use std::num::NonZeroU16;
+use std::pin::Pin;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use strum::{EnumCount, IntoStaticStr, VariantNames};
@@ -33,6 +35,40 @@ pub trait EventHandler: Send + Sync {
 
     /// Dispatched when an HTTP rate limit is hit.
     async fn ratelimit(&self, _data: RatelimitInfo) {}
+}
+
+impl<EH> EventHandler for Arc<EH>
+where
+    EH: EventHandler + ?Sized,
+{
+    fn filter_event(&self, context: &Context, event: &Event) -> bool {
+        EH::filter_event(self.as_ref(), context, event)
+    }
+
+    fn dispatch<'life0, 'life1, 'life2, 'async_trait>(
+        &'life0 self,
+        context: &'life1 Context,
+        event: &'life2 FullEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'async_trait>>
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        'life2: 'async_trait,
+        Self: 'async_trait,
+    {
+        EH::dispatch(self.as_ref(), context, event)
+    }
+
+    fn ratelimit<'life0, 'async_trait>(
+        &'life0 self,
+        data: RatelimitInfo,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'async_trait>>
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
+        EH::ratelimit(self.as_ref(), data)
+    }
 }
 
 macro_rules! full_event {

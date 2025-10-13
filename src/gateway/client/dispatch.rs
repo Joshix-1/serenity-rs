@@ -43,9 +43,10 @@ pub(crate) async fn dispatch_model<EH>(
     event: Box<Event>,
     context: Context,
     #[cfg(feature = "framework")] framework: Option<Arc<dyn Framework>>,
-    event_handler: Option<Arc<EH>>,
+    event_handler: Option<EH>,
     raw_event_handler: Option<Arc<dyn RawEventHandler>>,
-) where EH: EventHandler + ?Sized + 'static
+) where
+    EH: EventHandler + Clone + 'static,
 {
     if let Some(raw_handler) = raw_event_handler {
         raw_handler.raw_event(context.clone(), &event).await;
@@ -87,11 +88,11 @@ async fn dispatch_framework(
 
 async fn dispatch_event_handler<EH>(
     context: &Context,
-    event_handler: Option<Arc<EH>>,
+    event_handler: Option<EH>,
     full_event: &FullEvent,
     extra_event: Option<&FullEvent>,
-)
-    where EH: EventHandler + ?Sized + 'static
+) where
+    EH: EventHandler + Clone + 'static,
 {
     if let Some(handler) = event_handler {
         if let Some(extra_event) = extra_event {
