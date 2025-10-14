@@ -67,7 +67,7 @@ use crate::model::user::OnlineStatus;
 
 /// A builder implementing [`IntoFuture`] building a [`Client`] to interact with Discord.
 #[must_use = "Builders do nothing unless they are awaited"]
-pub struct ClientBuilder<EH>
+pub struct ClientBuilder<EH = Arc<dyn EventHandler>>
 where
     EH: EventHandler + Clone + 'static,
 {
@@ -238,9 +238,24 @@ where
     }
 
     /// Sets the event handler where all received gateway events will be dispatched.
-    pub fn event_handler(mut self, event_handler: EH) -> Self {
-        self.event_handler = Some(event_handler);
-        self
+    pub fn event_handler<E>(self, event_handler: E) -> ClientBuilder<E>
+    where
+        E: EventHandler + Clone + 'static,
+    {
+        ClientBuilder {
+            token: self.token,
+            data: self.data,
+            http: self.http,
+            intents: self.intents,
+            cache_settings: self.cache_settings,
+            #[cfg(feature = "framework")]
+            framework: self.framework,
+            event_handler: Some(event_handler),
+            raw_event_handler: self.raw_event_handler,
+            presence: self.presence,
+            wait_time_between_shard_start: self.wait_time_between_shard_start,
+            compression: self.compression,
+        }
     }
 
     /// Gets the added event handler. See [`Self::event_handler`] for more info.
