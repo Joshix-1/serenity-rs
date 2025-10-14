@@ -19,7 +19,7 @@ pub trait Framework: Send + Sync {
     /// Called directly after the `Client` is created.
     async fn init<EH>(&mut self, client: &Client<EH>)
     where
-        EH: crate::all::EventHandler + ?Sized + 'static,
+        EH: crate::all::EventHandler + Clone + 'static,
     {
         let _: &Client<EH> = client;
     }
@@ -34,7 +34,7 @@ where
 {
     async fn init<EH>(&mut self, client: &Client<EH>)
     where
-        EH: crate::all::EventHandler + ?Sized + 'static,
+        EH: crate::all::EventHandler + Clone + 'static,
     {
         (**self).init(client).await;
     }
@@ -50,7 +50,7 @@ where
 {
     async fn init<EH>(&mut self, client: &Client<EH>)
     where
-        EH: crate::all::EventHandler + ?Sized + 'static,
+        EH: crate::all::EventHandler + Clone + 'static,
     {
         (**self).init(client).await;
     }
