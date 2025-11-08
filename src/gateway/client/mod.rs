@@ -24,6 +24,7 @@
 //! [`sharding`]: crate::gateway::sharding
 
 mod context;
+mod data_container;
 pub(crate) mod dispatch;
 mod event_handler;
 
@@ -40,6 +41,7 @@ use tracing::instrument;
 use tracing::{debug, warn};
 
 pub use self::context::Context;
+pub use self::data_container::DataContainer;
 pub use self::event_handler::{EventHandler, FullEvent, RawEventHandler};
 #[cfg(feature = "voice")]
 use super::VoiceGatewayManager;
@@ -416,35 +418,6 @@ impl Client {
         ClientBuilder::new(token, intents)
     }
 
-    /// Fetches the data type provided to [`ClientBuilder::data`].
-    ///
-    /// See the documentation for [`Context::data`] for more information.
-    #[must_use]
-    pub fn data<Data: Send + Sync + 'static>(&self) -> Arc<Data> {
-        self.try_data().expect("Client::data generic does not match ClientBuilder::data type")
-    }
-
-    /// Tries to fetch the data type provided to [`ClientBuilder::data`].
-    ///
-    /// This returns None if no data was provided or Data is the wrong type and
-    /// is mostly for Framework usage, normal bots should just use [`Self::data`].
-    #[must_use]
-    pub fn try_data<Data: Send + Sync + 'static>(&self) -> Option<Arc<Data>> {
-        Arc::clone(&self.data).downcast().ok()
-    }
-
-    /// A version of [`Self::data`] which returns a reference to the Data.
-    ///
-    /// This is useful if you need to borrow `Data` with the lifetime of `Client`, but otherwise
-    /// [`Self::data`] should be used.
-    #[must_use]
-    #[expect(clippy::needless_lifetimes, reason = "Easier to understand when explicitly written")]
-    pub fn data_ref<'a, Data: Send + Sync + 'static>(&'a self) -> &'a Data {
-        self.data
-            .downcast_ref()
-            .expect("Client::data generic does not match ClientBuilder::data type")
-    }
-
     /// Establish the connection and start listening for events.
     ///
     /// This will start receiving events in a loop and start dispatching the events to your
@@ -717,6 +690,15 @@ impl Client {
         self.shard_manager.run(start_shard, init, total_shards).await.map_err(Error::Gateway)
     }
 }
+
+impl self::data_container::PrivateDataContainerTrait for Client {
+    #[inline]
+    fn data_arc(&self) -> &Arc<dyn std::any::Any + Send + Sync + 'static> {
+        &self.data
+    }
+}
+
+impl DataContainer for Client {}
 
 fn check_shard_total(total_shards: u16) -> NonZeroU16 {
     NonZeroU16::new(total_shards).unwrap_or_else(|| {

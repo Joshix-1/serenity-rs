@@ -64,36 +64,6 @@ impl CacheHttp for Context {
 }
 
 impl Context {
-    /// A container for a data type that can be used across contexts.
-    ///
-    /// The purpose of the data field is to be accessible and persistent across contexts; that is,
-    /// data can be modified by one context, and will persist through the future and be accessible
-    /// through other contexts. This is useful for anything that should "live" through the program:
-    /// counters, database connections, custom user caches, etc.
-    ///
-    /// # Panics
-    /// Panics if the generic provided is not equal to the type provided in [`ClientBuilder::data`].
-    ///
-    /// [`ClientBuilder::data`]: super::ClientBuilder::data
-    #[must_use]
-    pub fn data<Data: Send + Sync + 'static>(&self) -> Arc<Data> {
-        Arc::clone(&self.data)
-            .downcast()
-            .expect("Type provided to Context should be the same as ClientBuilder::data.")
-    }
-
-    /// A version of [`Self::data`] which returns a reference to the Data.
-    ///
-    /// This is useful if you need to borrow `Data` with the lifetime of `Context`, but otherwise
-    /// [`Self::data`] should be used.
-    #[must_use]
-    #[expect(clippy::needless_lifetimes, reason = "Easier to understand when explicitly written")]
-    pub fn data_ref<'a, Data: Send + Sync + 'static>(&'a self) -> &'a Data {
-        self.data
-            .downcast_ref()
-            .expect("Type provided to Context should be the same as ClientBuilder::data.")
-    }
-
     /// Sets the current user as being [`Online`]. This maintains the current activity.
     ///
     /// [`Online`]: OnlineStatus::Online
@@ -366,3 +336,12 @@ impl Context {
         self.http.delete_application_emoji(emoji_id).await
     }
 }
+
+impl super::data_container::PrivateDataContainerTrait for Context {
+    #[inline]
+    fn data_arc(&self) -> &Arc<dyn std::any::Any + Send + Sync + 'static> {
+        &self.data
+    }
+}
+
+impl super::DataContainer for Context {}
