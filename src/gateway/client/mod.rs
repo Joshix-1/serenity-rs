@@ -433,6 +433,18 @@ impl Client {
         Arc::clone(&self.data).downcast().ok()
     }
 
+    /// A version of [`Self::data`] which returns a reference to the Data.
+    ///
+    /// This is useful if you need to borrow `Data` with the lifetime of `Client`, but otherwise
+    /// [`Self::data`] should be used.
+    #[must_use]
+    #[expect(clippy::needless_lifetimes, reason = "Easier to understand when explicitly written")]
+    pub fn data_ref<'a, Data: Send + Sync + 'static>(&'a self) -> &'a Data {
+        self.data
+            .downcast_ref()
+            .expect("Client::data generic does not match ClientBuilder::data type")
+    }
+
     /// Establish the connection and start listening for events.
     ///
     /// This will start receiving events in a loop and start dispatching the events to your
