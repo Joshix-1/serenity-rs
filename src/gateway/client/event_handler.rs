@@ -86,22 +86,25 @@ macro_rules! full_event {
         }
 
         paste::paste! {
-            $(
-                $( #[doc = $doc] )*
-                $( #[deprecated = $deprecated] )?
-                $( #[cfg(feature = $feature)] )?
-                #[cfg_attr(not(feature = "unstable"), non_exhaustive)]
-                pub struct [<$variant_name EventRef>]<'a> {
-                    pub $( $arg_name: &'a $arg_type ),*
-                }
-            )*
+            pub mod event {
+                use super::*;
+                $(
+                    $( #[doc = $doc] )*
+                    $( #[deprecated = $deprecated] )?
+                    $( #[cfg(feature = $feature)] )?
+                    #[cfg_attr(not(feature = "unstable"), non_exhaustive)]
+                    pub struct [<$variant_name EventRef>]<'a> {
+                        pub $( $arg_name: &'a $arg_type ),*
+                    }
+                )*
+            }
 
             pub trait GenericEventHandler: Send + Sync {
                 $(
                     $( #[doc = $doc] )*
                     $( #[deprecated = $deprecated] )?
                     $( #[cfg(feature = $feature)] )?
-                    fn [<on_ $variant_name:snake:lower>](&self, _ctx: &Context, _event: [<$variant_name EventRef>]<'_>) -> impl Future<Output = ()> + Send {
+                    fn [<on_ $variant_name:snake:lower>](&self, _ctx: &Context, _event: event::[<$variant_name EventRef>]<'_>) -> impl Future<Output = ()> + Send {
                         $crate::futures::future::always_ready(|| ())
                     }
                 )*
@@ -126,7 +129,7 @@ macro_rules! full_event {
                             FullEvent::$variant_name {
                                 $( $arg_name ),*
                             } => {
-                                let event = [<$variant_name EventRef>] {
+                                let event = event::[<$variant_name EventRef>] {
                                     $( $arg_name ),*
                                 };
                                 Box::pin(self.[<on_ $variant_name:snake:lower>](context, event))
