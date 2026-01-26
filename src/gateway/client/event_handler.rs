@@ -45,19 +45,38 @@ impl EventHandler for () {
     #[doc = ""]
     #[doc = " Similar to [`RawEventHandler`], this method runs synchronously to the [`ShardRunner`], keep"]
     #[doc = " runtime complexity low."]
-    fn filter_event(&self,_context: &Context,_event: &Event) -> bool {
+    fn filter_event(&self, _context: &Context, _event: &Event) -> bool {
         true
     }
 
     #[doc = " Dispatched when an HTTP rate limit is hit."]
     #[must_use]
-    #[allow(elided_named_lifetimes,clippy::async_yields_async,clippy::diverging_sub_expression,clippy::let_unit_value,clippy::needless_arbitrary_self_type,clippy::no_effect_underscore_binding,clippy::shadow_same,clippy::type_complexity,clippy::type_repetition_in_bounds,clippy::used_underscore_binding)]
-    fn ratelimit<'life0,'async_trait>(&'life0 self,_data:RatelimitInfo) ->  ::core::pin::Pin<Box<dyn ::core::future::Future<Output = ()> + ::core::marker::Send+'async_trait> >where 'life0:'async_trait,Self:'async_trait{
+    #[allow(
+        elided_named_lifetimes,
+        clippy::async_yields_async,
+        clippy::diverging_sub_expression,
+        clippy::let_unit_value,
+        clippy::needless_arbitrary_self_type,
+        clippy::no_effect_underscore_binding,
+        clippy::shadow_same,
+        clippy::type_complexity,
+        clippy::type_repetition_in_bounds,
+        clippy::used_underscore_binding
+    )]
+    fn ratelimit<'life0, 'async_trait>(
+        &'life0 self,
+        _data: RatelimitInfo,
+    ) -> ::core::pin::Pin<
+        Box<dyn ::core::future::Future<Output = ()> + ::core::marker::Send + 'async_trait>,
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         Box::pin(async move {
             let __self = self;
             let _data = _data;
-            let _:() = {}
-            ;
+            let _: () = {};
         })
     }
 }

@@ -40,7 +40,13 @@ use tracing::instrument;
 use tracing::{debug, warn};
 
 pub use self::context::Context;
-pub use self::event_handler::{EventHandler, FullEvent, RawEventHandler, event, GenericEventHandler};
+pub use self::event_handler::{
+    EventHandler,
+    FullEvent,
+    GenericEventHandler,
+    RawEventHandler,
+    event,
+};
 #[cfg(feature = "voice")]
 use super::VoiceGatewayManager;
 use super::{
