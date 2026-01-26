@@ -123,7 +123,7 @@ macro_rules! full_event {
                     $( #[doc = $doc] )*
                     $( #[deprecated = $deprecated] )?
                     $( #[cfg(feature = $feature)] )?
-                    fn [<on_ $variant_name:snake:lower>](&self, _ctx: &Context, _event: event::[<$variant_name EventRef>]<'_>) -> impl Future<Output = ()> + Send {
+                    fn [<on_ $variant_name:snake:lower>](&self, _ctx: &$crate::all::Context, _event: $crate::all::event::[<$variant_name EventRef>]<'_>) -> impl Future<Output = ()> + Send {
                         $crate::futures::future::always_ready(|| ())
                     }
                 )*
