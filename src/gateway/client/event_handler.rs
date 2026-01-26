@@ -113,7 +113,7 @@ macro_rules! full_event {
                     $( #[cfg(feature = $feature)] )?
                     #[cfg_attr(not(feature = "unstable"), non_exhaustive)]
                     pub struct [<$variant_name EventRef>]<'a> {
-                        pub $( $arg_name: &'a $arg_type ),*
+                        $( pub $arg_name: &'a $arg_type ),*
                     }
                 )*
             }
