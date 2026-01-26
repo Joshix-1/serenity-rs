@@ -35,6 +35,33 @@ pub trait EventHandler: Send + Sync {
     async fn ratelimit(&self, _data: RatelimitInfo) {}
 }
 
+impl EventHandler for () {
+    #[doc = " Checks if the `event` should be dispatched or ignored. Returns `true` by default."]
+    #[doc = ""]
+    #[doc = " Returning `false` will drop an event and prevent it being dispatched by any"]
+    #[doc = " frameworks and will exclude it from any collectors."]
+    #[doc = ""]
+    #[doc = " ## Warning"]
+    #[doc = ""]
+    #[doc = " Similar to [`RawEventHandler`], this method runs synchronously to the [`ShardRunner`], keep"]
+    #[doc = " runtime complexity low."]
+    fn filter_event(&self,_context: &Context,_event: &Event) -> bool {
+        true
+    }
+
+    #[doc = " Dispatched when an HTTP rate limit is hit."]
+    #[must_use]
+    #[allow(elided_named_lifetimes,clippy::async_yields_async,clippy::diverging_sub_expression,clippy::let_unit_value,clippy::needless_arbitrary_self_type,clippy::no_effect_underscore_binding,clippy::shadow_same,clippy::type_complexity,clippy::type_repetition_in_bounds,clippy::used_underscore_binding)]
+    fn ratelimit<'life0,'async_trait>(&'life0 self,_data:RatelimitInfo) ->  ::core::pin::Pin<Box<dyn ::core::future::Future<Output = ()> + ::core::marker::Send+'async_trait> >where 'life0:'async_trait,Self:'async_trait{
+        Box::pin(async move {
+            let __self = self;
+            let _data = _data;
+            let _:() = {}
+            ;
+        })
+    }
+}
+
 macro_rules! full_event {
     ( $(
         $( #[doc = $doc:literal] )*
@@ -56,6 +83,58 @@ macro_rules! full_event {
                     $( $arg_name: $arg_type ),*
                 },
             )*
+        }
+
+        paste::paste! {
+            $(
+                $( #[doc = $doc] )*
+                $( #[deprecated = $deprecated] )?
+                $( #[cfg(feature = $feature)] )?
+                #[cfg_attr(not(feature = "unstable"), non_exhaustive)]
+                pub struct [<$variant_name EventRef>]<'a> {
+                    pub $( $arg_name: &'a $arg_type ),*
+                }
+            )*
+
+            pub trait GenericEventHandler: Send + Sync {
+                $(
+                    $( #[doc = $doc] )*
+                    $( #[deprecated = $deprecated] )?
+                    $( #[cfg(feature = $feature)] )?
+                    fn [<on_ $variant_name:snake:lower>](&self, _ctx: &Context, _event: [<$variant_name EventRef>]<'_>) -> impl Future<Output = ()> + Send {
+                        $crate::futures::future::always_ready(|| ())
+                    }
+                )*
+            }
+
+            impl<T: GenericEventHandler> EventHandler for T {
+                fn dispatch<
+                    'life0,
+                    'life1,
+                    'life2,
+                    'async_trait
+                >(&'life0 self, context: &'life1 Context, event: &'life2 FullEvent)
+                    -> ::core::pin::Pin<Box<dyn ::core::future::Future<Output = ()> + ::core::marker::Send + 'async_trait>>
+                    where 'life0: 'async_trait,
+                          'life1: 'async_trait,
+                          'life2: 'async_trait,
+                          Self: 'async_trait
+                {
+                    match event {
+                        $(
+                            $( #[cfg(feature = $feature)] )?
+                            FullEvent::$variant_name {
+                                $( $arg_name ),*
+                            } => {
+                                let event = [<$variant_name EventRef>] {
+                                    $( $arg_name ),*
+                                };
+                                Box::pin(self.[<on_ $variant_name:snake:lower>](context, event))
+                            },
+                        )*
+                    }
+                }
+            }
         }
     }
 }
